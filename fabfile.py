@@ -12,7 +12,7 @@ def append_path_in_bash(c):
     c.local("source ~/.bashrc")
 
 @task 
-def custom_ls(c):
+def custom_ls(c, show_hidden_files=''):
     ls_result = c.local("ls -alh",hide=True)
     ls_output = ls_result.stdout
     split_output = ls_output.split("\n")
@@ -20,10 +20,11 @@ def custom_ls(c):
     for line in split_output:
         if len(line) != 0:
             cleaned_lines.append(line)
-    total_files = len(cleaned_lines) - 1
-    table_title = "File Listing ({0} files)".format(total_files)
     table_data = list()
-    table_data.append(["Directory / File", "Owner", "Size", "Creation date", "Creation time", "Hidden"])
+    if show_hidden_files == 'True':
+        table_data.append(["Directory / File", "Owner", "Size", "Creation date", "Creation time", "Hidden"])
+    else:
+        table_data.append(["Directory / File", "Owner", "Size", "Creation date", "Creation time"])
     for line in cleaned_lines:
         split_line = line.split()
         if len(split_line) > 2:
@@ -32,10 +33,19 @@ def custom_ls(c):
             file_size = split_line[4].strip()
             creation_date = split_line[-4].strip() + " " + split_line[-3].strip()
             creation_time = split_line[-2].strip()
-            if str(directory_file).startswith("."):
-                hidden_status = "True"
-            else:
-                hidden_status = "False"
-            table_data.append([ directory_file, owner, file_size, creation_date, creation_time, hidden_status ])
+            if not show_hidden_files == 'True':
+                if str(directory_file).startswith("."):
+                    continue
+            if show_hidden_files == 'True':
+                hidden_status = ''
+                if str(directory_file).startswith("."):
+                    hidden_status = 'True'
+                else:
+                    hidden_status = 'False'
+                table_data.append([ directory_file, owner, file_size, creation_date, creation_time, hidden_status ])
+            else:        
+                table_data.append([ directory_file, owner, file_size, creation_date, creation_time ])
+    total_files = len(table_data) - 1
+    table_title = "File Listing ({0} files)".format(total_files)
     double_table = DoubleTable(table_data, table_title)
     print(double_table.table)
